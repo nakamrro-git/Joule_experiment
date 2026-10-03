@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ジュールの羽根車実験</title>
+<style>
+  :root{
+    --bg:#f2ede4;
+    --panel:#ffffff;
+    --ink:#2b2420;
+    --ink-soft:#6b5f54;
+    --line:#d9cfc0;
+    --brass:#a97a3f;
+    --brass-dark:#7a5528;
+    --water:#3d7ea6;
+    --water-light:#9fc6dd;
+    --accent:#c0472c;
+    --mercury:#c0472c;
+    --shadow: rgba(43,36,32,0.12);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme: dark){
+      --bg:#1c1815;
+      --panel:#26211d;
+      --ink:#eee6da;
+      --ink-soft:#b3a999;
+      --line:#3a332c;
+      --water:#4d8db2;
+      --water-light:#2f5570;
+      --shadow: rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#1c1815;
+    --panel:#26211d;
+    --ink:#eee6da;
+    --ink-soft:#b3a999;
+    --line:#3a332c;
+    --water:#4d8db2;
+    --water-light:#2f5570;
+    --shadow: rgba(0,0,0,0.4);
+  }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html,body{ height:100%; }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px));
+  }
+  .wrap{ width:100%; max-width:900px; }
+
+  header{ margin-bottom:18px; }
+  h1{
+    font-size:1.5rem;
+    margin:0 0 6px;
+    letter-spacing:0.01em;
+    font-weight:700;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:0.92rem;
+    line-height:1.6;
+    max-width:60ch;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:720px){
+    .layout{ grid-template-columns:1fr; }
+  }
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+
+  .stage-card{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .stage-hint{
+    font-size:0.82rem;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+  svg{ width:100%; height:auto; max-width:340px; touch-action:none; user-select:none; }
+  #weightGrip{ cursor: grab; }
+  #weightGrip:active{ cursor: grabbing; }
+
+  .side{ display:flex; flex-direction:column; gap:14px; }
+
+  .readout{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .temp-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .thermo{
+    position:relative;
+    width:20px;
+    height:120px;
+    border-radius:10px;
+    background:var(--line);
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .thermo-fill{
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:20%;
+    background:var(--mercury);
+    transition:height 0.15s linear, background 0.3s linear;
+  }
+  .temp-num{
+    font-size:2.4rem;
+    font-weight:700;
+    line-height:1;
+    font-variant-numeric: tabular-nums;
+  }
+  .temp-unit{ font-size:1.1rem; color:var(--ink-soft); font-weight:500; }
+  .temp-label{ font-size:0.8rem; color:var(--ink-soft); margin-bottom:2px; }
+
+  .stats{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    font-size:0.85rem;
+  }
+  .stat{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+  }
+  .stat .k{ color:var(--ink-soft); font-size:0.72rem; }
+  .stat .v{ font-weight:600; font-variant-numeric: tabular-nums; }
+
+  label{ font-size:0.85rem; font-weight:600; display:block; margin-bottom:4px; }
+  .field{ margin-bottom:14px; }
+  .field .val{ color:var(--ink-soft); font-weight:500; }
+  input[type=range]{
+    width:100%;
+    accent-color:var(--accent);
+  }
+
+  .buttons{ display:flex; gap:8px; flex-wrap:wrap; }
+  button{
+    font-family:inherit;
+    font-size:0.85rem;
+    font-weight:600;
+    padding:9px 14px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  button.primary{
+    background:var(--accent);
+    color:#fff;
+    border-color:var(--accent);
+  }
+  button:active{ transform: translateY(1px); }
+
+  .note{
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    line-height:1.6;
+    border-top:1px solid var(--line);
+    padding-top:10px;
+    margin-top:4px;
+  }
+  .boiling{ color:var(--accent); font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ジュールの羽根車実験</h1>
+    <p class="lede">おもりを指でドラッグして上下に動かすと、糸でつながった羽根車が回転し、容器の中の水をかき混ぜます。動かした分だけ力学的エネルギーが熱に変わり、水温がじわじわと上昇します。</p>
+  </header>
+
+  <div class="layout">
+    <div class="card stage-card">
+      <svg id="stage" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
+        <!-- stand -->
+        <line x1="30" y1="396" x2="30" y2="18" stroke="var(--brass-dark)" stroke-width="6" stroke-linecap="round"/>
+        <line x1="30" y1="396" x2="90" y2="396" stroke="var(--brass-dark)" stroke-width="6" stroke-linecap="round"/>
+        <line x1="26" y1="20" x2="190" y2="20" stroke="var(--brass-dark)" stroke-width="6" stroke-linecap="round"/>
+
+        <!-- fixed pulley -->
+        <circle cx="182" cy="30" r="11" fill="none" stroke="var(--brass)" stroke-width="4"/>
+
+        <!-- string -->
+        <line id="stringA" x1="182" y1="30" x2="182" y2="120" stroke="#8a7c68" stroke-width="2"/>
+        <line id="stringB" x1="182" y1="30" x2="95" y2="55" stroke="#8a7c68" stroke-width="2"/>
+
+        <!-- drum + shaft -->
+        <g id="drum">
+          <circle cx="95" cy="55" r="10" fill="var(--brass)"/>
+          <line x1="95" y1="55" x2="95" y2="45" stroke="var(--brass-dark)" stroke-width="3"/>
+        </g>
+        <line x1="95" y1="65" x2="95" y2="300" stroke="var(--brass-dark)" stroke-width="4"/>
+
+        <!-- beaker: height is exactly 2x the paddle wheel's height, so water can -->
+        <!-- never fall below the paddle even at minimum volume -->
+        <defs>
+          <clipPath id="beakerClip">
+            <path d="M45,160 L45,342 Q45,360 63,360 L127,360 Q145,360 145,342 L145,160 Z"/>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#beakerClip)">
+          <rect id="waterFill" x="45" y="260" width="100" height="100" fill="var(--water)"/>
+        </g>
+        <path d="M45,160 L45,342 Q45,360 63,360 L127,360 Q145,360 145,342 L145,160" fill="none" stroke="var(--ink-soft)" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- paddle wheel -->
+        <g id="paddle">
+          <rect x="60" y="295.5" width="70" height="9" rx="3" fill="#c96a3e"/>
+          <rect x="90.5" y="265" width="9" height="70" rx="3" fill="#c96a3e"/>
+          <circle cx="95" cy="300" r="7" fill="var(--brass-dark)"/>
+        </g>
+
+        <!-- weight -->
+        <g id="weightGrip">
+          <rect id="weightRect" x="167" y="120" width="30" height="42" rx="4" fill="var(--brass)" stroke="var(--brass-dark)" stroke-width="2"/>
+          <text id="weightLabel" x="182" y="145" text-anchor="middle" font-size="11" font-weight="700" fill="#3a2c12">5kg</text>
+        </g>
+      </svg>
+      <p class="stage-hint">おもりをドラッグ（クリック＆ドラッグ／タッチ）して動かしてください</p>
+    </div>
+
+    <div class="side">
+      <div class="card readout">
+        <div>
+          <div class="temp-label">水温</div>
+          <div class="temp-row">
+            <div class="thermo"><div class="thermo-fill" id="thermoFill"></div></div>
+            <div>
+              <span class="temp-num" id="tempNum">20.00</span><span class="temp-unit">℃</span>
+              <div id="boilNote" class="boiling" style="display:none;">沸騰しました！</div>
+            </div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="k">投入エネルギー</div><div class="v" id="energyVal">0 J</div></div>
+          <div class="stat"><div class="k">羽根車の回転数</div><div class="v" id="rotVal">0.0 回転</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label>水の量 <span class="val" id="volVal">100 mL</span></label>
+          <input type="range" id="volume" min="20" max="1000" step="10" value="100">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>おもりの質量 <span class="val" id="massVal">5.0 kg</span></label>
+          <input type="range" id="mass" min="0.5" max="20" step="0.5" value="5">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="buttons">
+          <button class="primary" id="autoBtn">オートで動かす</button>
+          <button id="resetBtn">リセット</button>
+        </div>
+        <p class="note">重力による位置エネルギーが羽根車の摩擦で熱に変わる様子を再現しています（W = mgh、Q = mcΔT、水の比熱 c = 4186 J/(kg·℃)）。容器の高さは羽根車の位置のちょうど2倍にしてあり、水の量をどれだけ減らしても水面は必ず羽根車より上にとどまります。実際のジュールの実験では、水はごくわずかしか温まらないため、何度もおもりを落とす必要がありました。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const svg = document.getElementById('stage');
+  const weightGrip = document.getElementById('weightGrip');
+  const weightRect = document.getElementById('weightRect');
+  const weightLabel = document.getElementById('weightLabel');
+  const paddle = document.getElementById('paddle');
+  const drum = document.getElementById('drum');
+  const stringA = document.getElementById('stringA');
+  const stringB = document.getElementById('stringB');
+  const waterFill = document.getElementById('waterFill');
+  const thermoFill = document.getElementById('thermoFill');
+  const tempNum = document.getElementById('tempNum');
+  const energyVal = document.getElementById('energyVal');
+  const rotVal = document.getElementById('rotVal');
+  const boilNote = document.getElementById('boilNote');
+  const volumeInput = document.getElementById('volume');
+  const massInput = document.getElementById('mass');
+  const volVal = document.getElementById('volVal');
+  const massVal = document.getElementById('massVal');
+  const autoBtn = document.getElementById('autoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const MIN_Y = 45;   // top limit for weight rect y
+  const MAX_Y = 380;  // bottom limit for weight rect y
+  const METERS_PER_PX = 0.01; // scale: pixel drag -> meters fallen
+  const DEG_PER_PX = 4;       // visual rotation speed
+  const G = 9.8;
+  const C_WATER = 4186; // J/(kg*C)
+
+  // Beaker geometry: height is exactly 2x the paddle wheel's position,
+  // so the water never drops below the paddle.
+  const BEAKER_BOTTOM = 360;
+  const PADDLE_MIN_FILL = 100; // water height (px) that just covers the paddle
+  const BEAKER_HEIGHT = PADDLE_MIN_FILL * 2; // = container height (top of paddle's "2x" level)
+
+  let weightY = 120;
+  let rotation = 0;
+  let totalEnergy = 0;
+  let temperature = 20.0;
+  let dragging = false;
+  let lastSvgY = 0;
+  let autoOn = false;
+  let autoStart = 0;
+  let lastAutoY = weightY;
+
+  function getSvgPoint(evt){
+    const pt = svg.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    const ctm = svg.getScreenCTM();
+    return pt.matrixTransform(ctm.inverse());
+  }
+
+  function currentWaterKg(){
+    return parseFloat(volumeInput.value) / 1000;
+  }
+  function currentMassKg(){
+    return parseFloat(massInput.value);
+  }
+
+  function applyDeltaPx(dyPx){
+    if (dyPx === 0) return;
+    rotation += dyPx * DEG_PER_PX;
+    const dh = Math.abs(dyPx) * METERS_PER_PX;
+    const work = currentMassKg() * G * dh;
+    totalEnergy += work;
+    const waterKg = Math.max(currentWaterKg(), 0.001);
+    const deltaT = work / (waterKg * C_WATER);
+    temperature = Math.min(100, temperature + deltaT);
+  }
+
+  function render(){
+    weightRect.setAttribute('y', weightY);
+    weightLabel.setAttribute('y', weightY + 25);
+    weightLabel.textContent = currentMassKg() + 'kg';
+    stringA.setAttribute('y2', weightY);
+    paddle.setAttribute('transform', `rotate(${rotation} 95 300)`);
+    drum.setAttribute('transform', `rotate(${rotation} 95 55)`);
+
+    // water level based on volume: at the slider's minimum, water height equals
+    // PADDLE_MIN_FILL (just covers the paddle); at the slider's maximum it fills
+    // the whole container (BEAKER_HEIGHT = 2 x PADDLE_MIN_FILL).
+    const vol = parseFloat(volumeInput.value);
+    const volMin = parseFloat(volumeInput.min);
+    const volMax = parseFloat(volumeInput.max);
+    const frac = Math.min(1, Math.max(0, (vol - volMin) / (volMax - volMin)));
+    const h = PADDLE_MIN_FILL * (1 + frac);
+    waterFill.setAttribute('height', h);
+    waterFill.setAttribute('y', BEAKER_BOTTOM - h);
+
+    // water color warms slightly with temperature
+    const t = Math.min(1, (temperature - 20) / 60);
+    const r = Math.round(61 + t * (192 - 61));
+    const g = Math.round(126 + t * (71 - 126));
+    const b = Math.round(166 + t * (44 - 166));
+    waterFill.setAttribute('fill', `rgb(${r},${g},${b})`);
+
+    tempNum.textContent = temperature.toFixed(2);
+    thermoFill.style.height = Math.min(100, Math.max(2, (temperature) )) + '%';
+    thermoFill.style.background = temperature >= 100 ? '#c0472c' : (temperature > 50 ? '#c0472c' : '#3d7ea6');
+    boilNote.style.display = temperature >= 100 ? 'block' : 'none';
+
+    energyVal.textContent = totalEnergy < 1000
+      ? totalEnergy.toFixed(1) + ' J'
+      : (totalEnergy/1000).toFixed(2) + ' kJ';
+    rotVal.textContent = (Math.abs(rotation) / 360).toFixed(1) + ' 回転';
+
+    volVal.textContent = volumeInput.value + ' mL';
+    massVal.textContent = parseFloat(massInput.value).toFixed(1) + ' kg';
+  }
+
+  function clampY(y){
+    return Math.min(MAX_Y, Math.max(MIN_Y, y));
+  }
+
+  weightGrip.addEventListener('pointerdown', (evt)=>{
+    stopAuto();
+    dragging = true;
+    weightGrip.setPointerCapture(evt.pointerId);
+    lastSvgY = getSvgPoint(evt).y;
+    evt.preventDefault();
+  });
+
+  weightGrip.addEventListener('pointermove', (evt)=>{
+    if (!dragging) return;
+    const p = getSvgPoint(evt);
+    const rawDy = p.y - lastSvgY;
+    const newY = clampY(weightY + rawDy);
+    const actualDy = newY - weightY;
+    weightY = newY;
+    lastSvgY = p.y;
+    applyDeltaPx(actualDy);
+    render();
+    evt.preventDefault();
+  });
+
+  function endDrag(evt){
+    dragging = false;
+  }
+  weightGrip.addEventListener('pointerup', endDrag);
+  weightGrip.addEventListener('pointercancel', endDrag);
+
+  // Auto-play: smooth up/down cycling
+  let rafId = null;
+  function autoLoop(ts){
+    if (!autoOn) return;
+    if (!autoStart) autoStart = ts;
+    const elapsed = (ts - autoStart) / 1000;
+    const period = 1.4; // seconds per full up-down cycle
+    const phase = (elapsed % period) / period;
+    const wave = 0.5 - 0.5 * Math.cos(phase * Math.PI * 2);
+    const newY = MIN_Y + (MAX_Y - MIN_Y) * wave;
+    const dy = newY - lastAutoY;
+    lastAutoY = newY;
+    weightY = newY;
+    applyDeltaPx(dy);
+    render();
+    if (temperature < 100) {
+      rafId = requestAnimationFrame(autoLoop);
+    } else {
+      stopAuto();
+    }
+  }
+  function startAuto(){
+    autoOn = true;
+    autoStart = 0;
+    lastAutoY = weightY;
+    autoBtn.textContent = '停止';
+    rafId = requestAnimationFrame(autoLoop);
+  }
+  function stopAuto(){
+    autoOn = false;
+    autoBtn.textContent = 'オートで動かす';
+    if (rafId) cancelAnimationFrame(rafId);
+  }
+  autoBtn.addEventListener('click', ()=>{
+    if (autoOn) stopAuto(); else startAuto();
+  });
+
+  resetBtn.addEventListener('click', ()=>{
+    stopAuto();
+    weightY = 120;
+    rotation = 0;
+    totalEnergy = 0;
+    temperature = 20.0;
+    render();
+  });
+
+  volumeInput.addEventListener('input', render);
+  massInput.addEventListener('input', render);
+
+  render();
+})();
+</script>
+</body>
+</html>
